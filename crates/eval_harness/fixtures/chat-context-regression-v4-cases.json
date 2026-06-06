@@ -1,0 +1,92 @@
+[
+  {
+    "name": "biology-course-phrasing-and-major-switch",
+    "requiresLiveProvider": true,
+    "turns": [
+      {
+        "message": "生物科学专业培养方案里主要学什么？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["生物科学"]
+        }
+      },
+      {
+        "message": "动物学和植物学这类课有没有？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["生物科学", "动物学", "植物学"]
+        }
+      },
+      {
+        "message": "换成生物技术，基因工程和细胞工程有没有？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["生物技术", "基因工程"]
+        }
+      }
+    ]
+  },
+  {
+    "name": "accounting-business-course-switch",
+    "requiresLiveProvider": true,
+    "turns": [
+      {
+        "message": "会计学培养方案里的课程结构说一下",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["会计学", "课程"]
+        }
+      },
+      {
+        "message": "财务管理、审计学这些课能查到吗？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["会计学", "财务管理", "审计学"]
+        }
+      },
+      {
+        "message": "如果是跨境电子商务，国际贸易实务或者跨境电商运营有没有？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["跨境电子商务"]
+        }
+      }
+    ]
+  },
+  {
+    "name": "gis-alternate-course-and-practice-followup",
+    "requiresLiveProvider": true,
+    "turns": [
+      {
+        "message": "地理信息科学专业培养目标和课程方向讲讲",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["地理信息科学"]
+        }
+      },
+      {
+        "message": "GIS和遥感相关课程有没有？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["地理信息科学", "遥感"]
+        }
+      },
+      {
+        "message": "别只说课，实践环节怎么安排？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["地理信息科学", "实践"]
+        }
+      }
+    ]
+  }
+]

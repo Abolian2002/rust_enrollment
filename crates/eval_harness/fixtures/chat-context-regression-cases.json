@@ -1,0 +1,218 @@
+[
+  {
+    "name": "probability-to-explicit-score-line-to-probability",
+    "turns": [
+      {
+        "message": "山东历史类500分数学与应用数学录取概率",
+        "expect": {
+          "type": "probability_assessment",
+          "replyIncludes": ["山东", "数学与应用数学"]
+        }
+      },
+      {
+        "message": "那汉语言文学历史类录取线呢？",
+        "expect": {
+          "type": "score_query",
+          "replyIncludes": ["山东", "汉语言文学"]
+        }
+      },
+      {
+        "message": "500分能上吗？",
+        "expect": {
+          "type": "probability_assessment",
+          "replyIncludes": ["500", "汉语言文学"]
+        }
+      }
+    ]
+  },
+  {
+    "name": "policy-knowledge-follow-up-and-approximate-faq",
+    "turns": [
+      {
+        "message": "关于公费师范生政策你讲讲",
+        "expect": {
+          "type": "knowledge_answer",
+          "replyIncludes": ["公费师范"]
+        }
+      },
+      {
+        "message": "解读",
+        "expect": {
+          "type": "knowledge_answer",
+          "replyIncludes": ["公费师范"]
+        }
+      },
+      {
+        "message": "那公费师范生有哪些专业？",
+        "expect": {
+          "type": "knowledge_answer",
+          "replyIncludes": ["公费师范", "专业"]
+        }
+      }
+    ]
+  },
+  {
+    "name": "score-query-province-ellipsis-then-probability",
+    "turns": [
+      {
+        "message": "黑龙江历史类汉语言文学录取线",
+        "expect": {
+          "type": "score_query",
+          "replyIncludes": ["黑龙江", "汉语言文学"]
+        }
+      },
+      {
+        "message": "山东呢？",
+        "expect": {
+          "type": "score_query",
+          "replyIncludes": ["山东", "汉语言文学"]
+        }
+      },
+      {
+        "message": "500分能上吗？",
+        "expect": {
+          "type": "probability_assessment",
+          "replyIncludes": ["山东", "500", "汉语言文学"]
+        }
+      }
+    ]
+  },
+  {
+    "name": "major-candidate-to-related-score-major-ellipsis",
+    "turns": [
+      {
+        "message": "美术有哪些专业？",
+        "expect": {
+          "type": "major_disambiguation",
+          "replyIncludes": ["美术", "视觉传达设计"]
+        }
+      },
+      {
+        "message": "环境设计黑龙江分数线",
+        "expect": {
+          "type": "score_query",
+          "replyIncludes": ["黑龙江", "环境设计"]
+        }
+      },
+      {
+        "message": "那视觉传达设计呢？",
+        "expect": {
+          "type": "score_query",
+          "replyIncludes": ["黑龙江", "视觉传达设计"]
+        }
+      }
+    ]
+  },
+  {
+    "name": "related-score-province-ellipsis-then-probability",
+    "turns": [
+      {
+        "message": "软件工程辽宁物理类录取线",
+        "expect": {
+          "type": "score_query",
+          "replyIncludes": ["辽宁", "软件工程"]
+        }
+      },
+      {
+        "message": "河北呢？",
+        "expect": {
+          "type": "score_query",
+          "replyIncludes": ["河北", "软件工程"]
+        }
+      },
+      {
+        "message": "430分能上吗？",
+        "expect": {
+          "type": "probability_assessment",
+          "replyIncludes": ["河北", "430", "软件工程"]
+        }
+      }
+    ]
+  },
+  {
+    "name": "training-plan-topic-follow-up",
+    "turns": [
+      {
+        "message": "数学与应用数学培养方案讲一下",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["数学与应用数学"]
+        }
+      },
+      {
+        "message": "主要课程呢？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["数学与应用数学", "课程"]
+        }
+      },
+      {
+        "message": "毕业要求呢？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["数学与应用数学", "毕业"]
+        }
+      }
+    ]
+  },
+  {
+    "name": "province-major-list-follow-up-score-and-missing-subject",
+    "turns": [
+      {
+        "message": "广西招生什么专业？",
+        "expect": {
+          "type": "province_major_list",
+          "minToolCalls": 1,
+          "replyIncludes": ["广西", "专业"]
+        }
+      },
+      {
+        "message": "数学与应用数学录取线",
+        "expect": {
+          "type": "score_query",
+          "replyIncludes": ["广西", "数学与应用数学"]
+        }
+      },
+      {
+        "message": "500分概率呢？",
+        "expect": {
+          "type": "follow_up",
+          "missingFields": ["subjectType"],
+          "replyIncludes": ["科类"]
+        }
+      }
+    ]
+  },
+  {
+    "name": "mixed-probability-and-score-continues-across-major-and-province",
+    "turns": [
+      {
+        "message": "黑龙江理科500分数学与应用数学录取概率和录取线",
+        "expect": {
+          "type": "evidence_bundle",
+          "bundleIncludes": ["probability_assessment", "score_query"],
+          "replyIncludes": ["黑龙江", "数学与应用数学", "500"]
+        }
+      },
+      {
+        "message": "换成物理学呢？",
+        "expect": {
+          "type": "evidence_bundle",
+          "bundleIncludes": ["probability_assessment", "score_query"],
+          "replyIncludes": ["黑龙江", "物理学", "500"]
+        }
+      },
+      {
+        "message": "山东呢？",
+        "expect": {
+          "type": "evidence_bundle",
+          "bundleIncludes": ["probability_assessment", "score_query"],
+          "replyIncludes": ["山东", "物理学", "500"]
+        }
+      }
+    ]
+  }
+]

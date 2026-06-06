@@ -1,0 +1,251 @@
+[
+  {
+    "name": "brochure-rules-adjustment-tiebreak",
+    "requiresLiveProvider": true,
+    "turns": [
+      {
+        "message": "2025招生简章里普通类专业怎么录取？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["普通类", "录取"]
+        }
+      },
+      {
+        "message": "如果服从调剂会怎样？",
+        "expect": {
+          "type": "knowledge_answer",
+          "replyIncludes": ["调剂"]
+        }
+      },
+      {
+        "message": "同分排序规则呢？",
+        "expect": {
+          "type": "knowledge_answer",
+          "replyIncludes": ["同分"]
+        }
+      }
+    ]
+  },
+  {
+    "name": "brochure-health-language-contact",
+    "requiresLiveProvider": true,
+    "turns": [
+      {
+        "message": "2025招生简章对体检有什么要求？",
+        "expect": {
+          "type": "knowledge_answer",
+          "replyIncludes": ["体检"]
+        }
+      },
+      {
+        "message": "法语和西班牙语专业对外语语种有什么提示？",
+        "expect": {
+          "type": "knowledge_answer",
+          "replyIncludes": ["法语", "西班牙语"]
+        }
+      },
+      {
+        "message": "招生咨询电话和招生网站是多少？",
+        "expect": {
+          "type": "knowledge_answer",
+          "replyIncludes": ["0451", "zsb.hrbnu.edu.cn"]
+        }
+      }
+    ]
+  },
+  {
+    "name": "brochure-plan-subject-college-profile",
+    "requiresLiveProvider": true,
+    "turns": [
+      {
+        "message": "2025招生简章里省外招生计划怎么查询？",
+        "expect": {
+          "type": "knowledge_answer",
+          "replyIncludes": ["招生计划"]
+        }
+      },
+      {
+        "message": "数字媒体技术专业的选考科目是什么？",
+        "expect": {
+          "type": "knowledge_answer",
+          "replyIncludes": ["数字媒体技术"]
+        }
+      },
+      {
+        "message": "地理科学学院简介里有什么亮点？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["地理科学学院"]
+        }
+      }
+    ]
+  },
+  {
+    "name": "geography-training-plan-continuations",
+    "requiresLiveProvider": true,
+    "turns": [
+      {
+        "message": "地理科学专业培养目标是什么？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["地理科学", "培养目标"]
+        }
+      },
+      {
+        "message": "毕业条件和学分要求呢？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["地理科学", "学分"]
+        }
+      },
+      {
+        "message": "课程结构有哪些部分？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["地理科学", "课程"]
+        }
+      },
+      {
+        "message": "实践环节怎么安排？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["地理科学", "实践"]
+        }
+      }
+    ]
+  },
+  {
+    "name": "psychology-training-plan-followups",
+    "requiresLiveProvider": true,
+    "turns": [
+      {
+        "message": "心理学专业培养方案里的毕业要求说一下",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["心理学", "毕业"]
+        }
+      },
+      {
+        "message": "师德规范和教育情怀部分呢？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["心理学"]
+        }
+      },
+      {
+        "message": "培养目标再说说",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["心理学", "培养目标"]
+        }
+      }
+    ]
+  },
+  {
+    "name": "accounting-and-cross-border-training-switch",
+    "requiresLiveProvider": true,
+    "turns": [
+      {
+        "message": "会计学培养方案里学时和学分比例怎么安排？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["会计学", "学分"]
+        }
+      },
+      {
+        "message": "实践环节占多少？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["会计学", "实践"]
+        }
+      },
+      {
+        "message": "换成跨境电子商务培养目标呢？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["跨境电子商务", "培养目标"]
+        }
+      }
+    ]
+  },
+  {
+    "name": "data-science-score-to-training-plan",
+    "requiresLiveProvider": true,
+    "turns": [
+      {
+        "message": "山东数据科学与大数据技术2021到2025录取线",
+        "expect": {
+          "type": "evidence_bundle",
+          "bundleIncludes": ["score_query"],
+          "replyIncludes": ["山东", "数据科学与大数据技术"]
+        }
+      },
+      {
+        "message": "这个专业培养目标讲一下",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["数据科学与大数据技术", "培养目标"]
+        }
+      },
+      {
+        "message": "毕业条件需要多少学分？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["数据科学与大数据技术", "学分"]
+        }
+      },
+      {
+        "message": "数据结构和操作系统课程有没有？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["数据科学与大数据技术", "数据结构"]
+        }
+      }
+    ]
+  },
+  {
+    "name": "art-major-score-to-training-plan",
+    "requiresLiveProvider": true,
+    "turns": [
+      {
+        "message": "河北美术学2021到2025录取线",
+        "expect": {
+          "type": "evidence_bundle",
+          "bundleIncludes": ["score_query"],
+          "replyIncludes": ["河北", "美术学"]
+        }
+      },
+      {
+        "message": "美术学培养方案毕业创作和教育实习怎么安排？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["美术学", "毕业创作"]
+        }
+      },
+      {
+        "message": "第二课堂和创新实践有吗？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["美术学"]
+        }
+      }
+    ]
+  }
+]

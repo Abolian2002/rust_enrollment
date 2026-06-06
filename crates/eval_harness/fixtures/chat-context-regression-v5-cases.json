@@ -1,0 +1,191 @@
+[
+  {
+    "name": "identity-and-capability-uses-synthesis",
+    "requiresLiveProvider": true,
+    "turns": [
+      {
+        "message": "你擅长什么？",
+        "expect": {
+          "type": "greeting",
+          "minModelCalls": 1,
+          "replyIncludes": ["招生"]
+        }
+      },
+      {
+        "message": "介绍一下学校",
+        "expect": {
+          "type": "knowledge_answer",
+          "minModelCalls": 1,
+          "minToolCalls": 1,
+          "replyIncludes": ["哈尔滨师范大学"]
+        }
+      }
+    ]
+  },
+  {
+    "name": "excel-score-probability-major-province-switch",
+    "requiresLiveProvider": true,
+    "turns": [
+      {
+        "message": "黑龙江物理类计算机科学与技术2021到2025录取线是多少？",
+        "expect": {
+          "type": "score_query",
+          "replyIncludes": ["黑龙江", "计算机科学与技术"]
+        }
+      },
+      {
+        "message": "511分在黑龙江物理类报计算机科学与技术稳吗？",
+        "expect": {
+          "type": "probability_assessment",
+          "replyIncludes": ["黑龙江", "511", "计算机科学与技术"]
+        }
+      },
+      {
+        "message": "换成软件工程呢？",
+        "expect": {
+          "type": "probability_assessment",
+          "replyIncludes": ["黑龙江", "511", "软件工程"]
+        }
+      },
+      {
+        "message": "河北物理类430分能报软件工程吗？",
+        "expect": {
+          "type": "probability_assessment",
+          "replyIncludes": ["河北", "430", "软件工程"]
+        }
+      },
+      {
+        "message": "那历史类汉语言文学师范类近三年最低分是多少？",
+        "expect": {
+          "type": "score_query",
+          "replyIncludes": ["河北", "历史类", "汉语言文学"]
+        }
+      }
+    ]
+  },
+  {
+    "name": "brochure-policy-fixed-facts-and-continuations",
+    "requiresLiveProvider": true,
+    "turns": [
+      {
+        "message": "讲一下学校2025年本科招生简章的录取规则。",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["2025", "录取"]
+        }
+      },
+      {
+        "message": "专业志愿之间有没有级差？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["级差"]
+        }
+      },
+      {
+        "message": "服从调剂还会被退档吗？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["调剂", "退档"]
+        }
+      },
+      {
+        "message": "同分考生怎么排序？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["同分"]
+        }
+      },
+      {
+        "message": "哪些专业对外语语种或单科成绩有限制？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["外语", "单科"]
+        }
+      }
+    ]
+  },
+  {
+    "name": "training-plan-course-credit-practice-followups",
+    "requiresLiveProvider": true,
+    "turns": [
+      {
+        "message": "数据科学与大数据技术培养目标是什么？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["数据科学与大数据技术", "培养目标"]
+        }
+      },
+      {
+        "message": "这个专业有没有数据结构和操作系统课程？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["数据科学与大数据技术", "数据结构", "操作系统"]
+        }
+      },
+      {
+        "message": "毕业需要多少学分？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["数据科学与大数据技术", "学分"]
+        }
+      },
+      {
+        "message": "音乐学专业的教育实习和实践环节怎么安排？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["音乐学", "实践"]
+        }
+      },
+      {
+        "message": "美术学培养方案里毕业创作和第二课堂怎么安排？",
+        "expect": {
+          "type": "knowledge_answer",
+          "minVectorChunks": 1,
+          "replyIncludes": ["美术学", "第二课堂"]
+        }
+      }
+    ]
+  },
+  {
+    "name": "province-major-list-from-latest-score-records",
+    "requiresLiveProvider": true,
+    "turns": [
+      {
+        "message": "哈师大在山东招生哪些专业",
+        "expect": {
+          "type": "province_major_list",
+          "minModelCalls": 1,
+          "minToolCalls": 1,
+          "replyIncludes": ["山东", "专业"]
+        }
+      },
+      {
+        "message": "山东招什么专业？",
+        "expect": {
+          "type": "province_major_list",
+          "minModelCalls": 1,
+          "minToolCalls": 1,
+          "replyIncludes": ["山东", "专业"]
+        }
+      },
+      {
+        "message": "物联网工程在哪些省份有招生？",
+        "expect": {
+          "type": "major_province_list",
+          "minModelCalls": 1,
+          "minToolCalls": 1,
+          "replyIncludes": ["物联网工程", "省"]
+        }
+      }
+    ]
+  }
+]

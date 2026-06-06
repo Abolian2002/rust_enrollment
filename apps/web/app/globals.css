@@ -1,0 +1,358 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --background: 251 248 241;
+  --foreground: 20 20 19;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100vh;
+  background-color: rgb(var(--background));
+  background-image: 
+    radial-gradient(circle at top, rgba(8, 23, 46, 0.04), transparent 50%),
+    radial-gradient(circle at bottom right, rgba(210, 167, 88, 0.06), transparent 40%),
+    url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%2308172e' fill-opacity='0.02' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='1'/%3E%3Ccircle cx='13' cy='13' r='1'/%3E%3C/g%3E%3C/svg%3E");
+  color: rgb(var(--foreground));
+  font-family: var(--font-sans), "PingFang SC", "Microsoft YaHei", sans-serif;
+  letter-spacing: 0.01em;
+}
+
+a {
+  text-decoration: none;
+}
+
+::selection {
+  background: rgba(210, 167, 88, 0.3);
+  color: #08172e;
+}
+
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-serif), "Noto Serif SC", "STSong", serif;
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .academy-text-shadow {
+    text-shadow: 0px 4px 20px rgba(8, 23, 46, 0.15);
+  }
+}
+
+/* ================================================================
+   Digital Human — Immersive Layout
+   ================================================================ */
+
+/* Sidebar container — the left panel */
+.dh-sidebar {
+  width: 40%;
+  max-width: 520px;
+  min-width: 340px;
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+}
+
+/* Elegant divider between panels */
+.dh-divider {
+  width: 1px;
+  position: relative;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(8, 23, 46, 0.06) 15%,
+    rgba(8, 23, 46, 0.10) 50%,
+    rgba(8, 23, 46, 0.06) 85%,
+    transparent 100%
+  );
+}
+
+/* ----------------------------------------------------------------
+   Digital Human Avatar — Root Container
+   ---------------------------------------------------------------- */
+.dh-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0a0f1a;
+}
+
+/* ---- Full-bleed video ---- */
+.dh-video-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.dh-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+.dh-video-ready {
+  opacity: 1;
+}
+
+/* Loading skeleton */
+.dh-video-skeleton {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(170deg, #0f1724 0%, #1a2744 50%, #0d1a30 100%);
+}
+.dh-skeleton-pulse {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.06);
+  border-top-color: rgba(210,167,88,0.5);
+  animation: dh-spin 0.8s linear infinite;
+}
+@keyframes dh-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Subtle vignette around edges — makes video blend naturally */
+.dh-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    /* Bottom fade for overlay bar readability */
+    linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 25%, transparent 50%),
+    /* Very subtle top fade */
+    linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, transparent 15%),
+    /* Left/right edge darkening */
+    radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.15) 100%);
+}
+
+/* ---- Bottom glass overlay bar ---- */
+.dh-overlay-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.dh-info-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dh-avatar-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(210, 167, 88, 0.15);
+  border: 1px solid rgba(210, 167, 88, 0.25);
+  color: rgba(210, 167, 88, 0.9);
+  flex-shrink: 0;
+}
+
+.dh-info-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dh-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.92);
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.dh-status-line {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+  font-weight: 400;
+  line-height: 1;
+}
+
+/* Status indicator dot */
+.dh-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dh-indicator-online {
+  background: #34d399;
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.5);
+}
+.dh-indicator-connecting {
+  background: #fbbf24;
+  animation: dh-blink 1s ease-in-out infinite;
+}
+.dh-indicator-speaking {
+  background: #34d399;
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.5);
+  animation: dh-blink 1.5s ease-in-out infinite;
+}
+.dh-indicator-thinking {
+  background: #60a5fa;
+  animation: dh-blink 0.8s ease-in-out infinite;
+}
+.dh-indicator-error {
+  background: #f87171;
+}
+
+@keyframes dh-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* ---- Control buttons ---- */
+.dh-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dh-ctrl-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.dh-ctrl-btn:hover {
+  background: rgba(255,255,255,0.14);
+  color: rgba(255,255,255,0.95);
+  border-color: rgba(255,255,255,0.2);
+}
+.dh-ctrl-active {
+  background: rgba(210, 167, 88, 0.15);
+  border-color: rgba(210, 167, 88, 0.3);
+  color: rgba(210, 167, 88, 0.9);
+}
+.dh-ctrl-stop:hover {
+  background: rgba(248, 113, 113, 0.15);
+  border-color: rgba(248, 113, 113, 0.3);
+  color: rgba(248, 113, 113, 0.9);
+}
+
+/* ---- Waveform strip (when speaking) ---- */
+.dh-wave-strip {
+  position: absolute;
+  bottom: 60px;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 20px;
+  gap: 1.5px;
+  pointer-events: none;
+}
+
+.dh-wave-tick {
+  width: 2px;
+  border-radius: 2px;
+  background: rgba(210, 167, 88, 0.6);
+  animation: dh-tick 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes dh-tick {
+  0% {
+    height: 3px;
+    opacity: 0.4;
+  }
+  100% {
+    height: 14px;
+    opacity: 0.9;
+  }
+}
+
+/* Sleek custom scrollbars */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(8, 23, 46, 0.08);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(8, 23, 46, 0.16);
+}
+
+/* Glassmorphism base */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+/* Glowing breathing effect for avatar nameplate when speaking */
+.avatar-breath-speak {
+  animation: nameplate-breath 2s infinite ease-in-out;
+}
+
+@keyframes nameplate-breath {
+  0%, 100% {
+    box-shadow: 0 4px 14px rgba(206, 52, 89, 0.15), 0 0 0 1px rgba(206, 52, 89, 0.15);
+  }
+  50% {
+    box-shadow: 0 4px 22px rgba(206, 52, 89, 0.4), 0 0 0 4px rgba(206, 52, 89, 0.15);
+  }
+}
+
+/* Subtle image hover zoom */
+.hover-zoom {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hover-zoom:hover {
+  transform: scale(1.03);
+}
+
