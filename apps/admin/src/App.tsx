@@ -5,6 +5,7 @@ import * as echarts from 'echarts';
 import chinaMap from './data/china-map.json';
 import {
   AlertCircle,
+  ArrowLeft,
   BarChart3,
   Bell,
   BookOpen,
@@ -205,7 +206,13 @@ function AdminLayout({ children }: { children: ReactNode }) {
             const Icon = item.icon;
             const active = item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path);
             return (
-              <Link className={`side-link ${active ? 'active' : ''}`} key={item.path} to={item.path}>
+              <Link
+                className={`side-link ${active ? 'active' : ''}`}
+                key={item.path}
+                to={item.path}
+                target={item.external ? '_blank' : undefined}
+                rel={item.external ? 'noopener noreferrer' : undefined}
+              >
                 <Icon size={20} />
                 {!collapsed ? <span>{item.label}</span> : null}
                 {!collapsed && item.external ? <MapPinned size={13} className="side-extra" /> : null}
@@ -1366,7 +1373,12 @@ function BigScreenPage() {
   return (
     <main className="big-screen">
       <header className="big-header">
-        <div><b>哈师大招生智能体管理后台</b><span>{now}</span></div>
+        <div>
+          <Link to="/" className="big-back-link">
+            <ArrowLeft size={16} /> 返回管理主页
+          </Link>
+          <span>{now}</span>
+        </div>
         <h1>哈尔滨师范大学 · 招生智能体<small>全国生源招生咨询态势总览</small></h1>
         <p>{screen ? `真实咨询数据更新时间：${screen.updatedAt}` : loading ? '正在读取真实咨询数据' : '暂无真实咨询数据'}</p>
       </header>

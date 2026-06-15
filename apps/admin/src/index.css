@@ -970,6 +970,20 @@ td {
   color: #7fb2ff;
   font-size: 13px;
 }
+.big-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #7fb2ff;
+  font-weight: bold;
+  font-size: 13px;
+  text-decoration: none;
+  transition: color 0.15s ease-in-out, transform 0.15s ease-in-out;
+}
+.big-back-link:hover {
+  color: #ffffff;
+  transform: translateX(-2px);
+}
 .big-header h1 {
   margin: 0;
   text-align: center;
