@@ -359,28 +359,24 @@ impl Database {
     }
 
     pub async fn admin_special_snapshot(&self) -> Result<AdminSpecialSnapshot> {
-        let total_questions = self.admin_total_user_questions().await?.max(1);
-        let updated_at = self.admin_updated_at().await?;
-        let plan_rows = sqlx::query(
-            r#"
-            WITH plans(name, pattern) AS (
-              VALUES
-                ('公费师范生', '%公费师范%'),
-                ('优师计划', '%优师%'),
-                ('振兴龙江计划', '%振兴龙江%'),
-                ('艺术类招生', '%艺术%'),
-                ('师范类专业', '%师范%')
-            )
-            SELECT name, COUNT(m.id)::bigint AS count
-            FROM plans
-            LEFT JOIN conversation_messages m
-              ON m.role = 'user' AND m.content ILIKE pattern
-            GROUP BY name
-            ORDER BY count DESC, name
-            "#,
-        )
-        .fetch_all(&self.pool)
-        .await?;
+        // Plan D: run independent queries in parallel with tokio::try_join!
+        let (
+            total_questions,
+            updated_at,
+            plan_rows,
+            major_attention,
+            policy_rows,
+            normal_rows,
+        ) = tokio::try_join!(
+            self.admin_total_user_questions(),
+            self.admin_updated_at(),
+            self.fetch_special_plan_rows(),
+            self.admin_major_attention(10),
+            self.fetch_policy_rows(),
+            self.fetch_normal_vs_non_normal(),
+        )?;
+        let total_questions = total_questions.max(1);
+
         let special_plans = plan_rows
             .iter()
             .map(|row| {
@@ -394,54 +390,17 @@ impl Database {
             })
             .collect::<Vec<_>>();
 
-        let major_attention = self.admin_major_attention(10).await?;
-        let policy_rows = sqlx::query(
-            r#"
-            WITH policies(name, pattern) AS (
-              VALUES
-                ('投档比例', '%投档%'),
-                ('调剂退档规则', '%调剂%'),
-                ('同分录取规则', '%同分%'),
-                ('单科成绩要求', '%单科%'),
-                ('体检限制专业', '%体检%'),
-                ('加分政策', '%加分%'),
-                ('语种要求', '%语种%')
-            )
-            SELECT name, COUNT(m.id)::bigint AS count
-            FROM policies
-            LEFT JOIN conversation_messages m
-              ON m.role = 'user' AND m.content ILIKE pattern
-            GROUP BY name
-            ORDER BY count DESC, name
-            "#,
-        )
-        .fetch_all(&self.pool)
-        .await?;
-        let policy_stats = policy_rows
-            .into_iter()
-            .map(|row| (row.get::<String, _>("name"), row.get::<i64, _>("count")))
-            .collect::<Vec<_>>();
-
-        let normal_rows = sqlx::query(
-            r#"
-            SELECT
-              CASE WHEN m.is_normal_major THEN '师范类' ELSE '非师范类' END AS name,
-              COUNT(DISTINCT cm.id)::bigint AS count
-            FROM majors m
-            JOIN conversation_messages cm
-              ON cm.role = 'user' AND cm.content ILIKE '%' || m.name || '%'
-            GROUP BY m.is_normal_major
-            ORDER BY count DESC
-            "#,
-        )
-        .fetch_all(&self.pool)
-        .await?;
         let normal_vs_non_normal = normal_rows
             .into_iter()
             .map(|row| AdminChartDatum {
                 name: row.get("name"),
                 value: row.get("count"),
             })
+            .collect::<Vec<_>>();
+
+        let policy_stats = policy_rows
+            .into_iter()
+            .map(|row| (row.get::<String, _>("name"), row.get::<i64, _>("count")))
             .collect::<Vec<_>>();
 
         let count_for = |name: &str| -> i64 {
@@ -908,6 +867,73 @@ impl Database {
         .fetch_one(&self.pool)
         .await?
         .get("count"))
+    }
+
+    // ---- Helper methods extracted for parallel execution (Plan D) ----
+
+    async fn fetch_special_plan_rows(&self) -> Result<Vec<sqlx::postgres::PgRow>> {
+        Ok(sqlx::query(
+            r#"
+            WITH plans(name, pattern) AS (
+              VALUES
+                ('公费师范生', '%公费师范%'),
+                ('优师计划', '%优师%'),
+                ('振兴龙江计划', '%振兴龙江%'),
+                ('艺术类招生', '%艺术%'),
+                ('师范类专业', '%师范%')
+            )
+            SELECT name, COUNT(m.id)::bigint AS count
+            FROM plans
+            LEFT JOIN conversation_messages m
+              ON m.role = 'user' AND m.content ILIKE pattern
+            GROUP BY name
+            ORDER BY count DESC, name
+            "#,
+        )
+        .fetch_all(&self.pool)
+        .await?)
+    }
+
+    async fn fetch_policy_rows(&self) -> Result<Vec<sqlx::postgres::PgRow>> {
+        Ok(sqlx::query(
+            r#"
+            WITH policies(name, pattern) AS (
+              VALUES
+                ('投档比例', '%投档%'),
+                ('调剂退档规则', '%调剂%'),
+                ('同分录取规则', '%同分%'),
+                ('单科成绩要求', '%单科%'),
+                ('体检限制专业', '%体检%'),
+                ('加分政策', '%加分%'),
+                ('语种要求', '%语种%')
+            )
+            SELECT name, COUNT(m.id)::bigint AS count
+            FROM policies
+            LEFT JOIN conversation_messages m
+              ON m.role = 'user' AND m.content ILIKE pattern
+            GROUP BY name
+            ORDER BY count DESC, name
+            "#,
+        )
+        .fetch_all(&self.pool)
+        .await?)
+    }
+
+    async fn fetch_normal_vs_non_normal(&self) -> Result<Vec<sqlx::postgres::PgRow>> {
+        Ok(sqlx::query(
+            r#"
+            SELECT
+              CASE WHEN m.is_normal_major THEN '师范类' ELSE '非师范类' END AS name,
+              COUNT(DISTINCT cm.id)::bigint AS count
+            FROM majors m
+            JOIN conversation_messages cm
+              ON cm.role = 'user' AND cm.content ILIKE '%' || m.name || '%'
+            GROUP BY m.is_normal_major
+            ORDER BY count DESC
+            "#,
+        )
+        .fetch_all(&self.pool)
+        .await?)
     }
 
     async fn admin_question_category_stats(&self) -> Result<Vec<AdminChartDatum>> {

@@ -14,7 +14,11 @@ use axum::{
     routing::{get, patch, post, put},
 };
 use db::Database;
-use domain::{ChatReply, ChatRequest, fail, ok, ok_with_meta};
+use domain::{
+    AdminAdmissionsAnalyticsSnapshot, AdminBigScreenSnapshot, AdminDashboardSnapshot,
+    AdminInsightsSnapshot, AdminKnowledgeCoverageSnapshot, AdminSpecialSnapshot, ChatReply,
+    ChatRequest, fail, ok, ok_with_meta,
+};
 use futures::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -29,7 +33,7 @@ use std::{
     },
     time::{Duration, Instant},
 };
-use tokio::sync::{Mutex, Semaphore, mpsc, watch};
+use tokio::sync::{Mutex, RwLock, Semaphore, mpsc, watch};
 use tokio::task::JoinHandle;
 use tokio_stream::wrappers::ReceiverStream;
 use tower_http::{
@@ -39,6 +43,74 @@ use tower_http::{
     trace::TraceLayer,
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+// ---------------------------------------------------------------------------
+// Admin snapshot in-memory cache (Plan B)
+// ---------------------------------------------------------------------------
+
+struct CachedEntry<T> {
+    data: T,
+    expires_at: Instant,
+}
+
+struct AdminSnapshotCache {
+    ttl: Duration,
+    dashboard: RwLock<Option<CachedEntry<AdminDashboardSnapshot>>>,
+    insights: RwLock<Option<CachedEntry<AdminInsightsSnapshot>>>,
+    special: RwLock<Option<CachedEntry<AdminSpecialSnapshot>>>,
+    admissions: RwLock<Option<CachedEntry<AdminAdmissionsAnalyticsSnapshot>>>,
+    knowledge: RwLock<Option<CachedEntry<AdminKnowledgeCoverageSnapshot>>>,
+    big_screen: RwLock<Option<CachedEntry<AdminBigScreenSnapshot>>>,
+}
+
+impl AdminSnapshotCache {
+    fn new(ttl: Duration) -> Self {
+        Self {
+            ttl,
+            dashboard: RwLock::new(None),
+            insights: RwLock::new(None),
+            special: RwLock::new(None),
+            admissions: RwLock::new(None),
+            knowledge: RwLock::new(None),
+            big_screen: RwLock::new(None),
+        }
+    }
+}
+
+/// Generic helper: read from cache or refresh using the provided async closure.
+async fn cached_or_refresh<T: Clone, F, Fut>(
+    lock: &RwLock<Option<CachedEntry<T>>>,
+    ttl: Duration,
+    fetch: F,
+) -> anyhow::Result<T>
+where
+    F: FnOnce() -> Fut,
+    Fut: std::future::Future<Output = anyhow::Result<T>>,
+{
+    // Fast path: check read lock
+    {
+        let guard = lock.read().await;
+        if let Some(entry) = guard.as_ref() {
+            if Instant::now() < entry.expires_at {
+                return Ok(entry.data.clone());
+            }
+        }
+    }
+    // Slow path: acquire write lock and refresh
+    let mut guard = lock.write().await;
+    // Double-check after acquiring write lock (another task may have refreshed)
+    if let Some(entry) = guard.as_ref() {
+        if Instant::now() < entry.expires_at {
+            return Ok(entry.data.clone());
+        }
+    }
+    let data = fetch().await?;
+    *guard = Some(CachedEntry {
+        data: data.clone(),
+        expires_at: Instant::now() + ttl,
+    });
+    Ok(data)
+}
 
 #[derive(Clone)]
 struct AppState {
@@ -50,6 +122,7 @@ struct AppState {
     voice_tts_semaphore: Arc<Semaphore>,
     active_voice_sessions: Arc<Mutex<HashMap<String, VoiceSessionCancel>>>,
     next_voice_session_id: Arc<AtomicU64>,
+    admin_cache: Arc<AdminSnapshotCache>,
 }
 
 #[derive(Clone)]
@@ -226,6 +299,10 @@ async fn main() -> anyhow::Result<()> {
         "postgresql://postgres:postgres@localhost:55432/hnu_enrollment".to_owned()
     });
     let db = Database::connect_lazy(&database_url)?;
+    let admin_cache_ttl_secs = std::env::var("ADMIN_CACHE_TTL_SECS")
+        .ok()
+        .and_then(|v| v.parse::<u64>().ok())
+        .unwrap_or(300);
     let state = Arc::new(AppState {
         agent: AdmissionsAgent::new(db.clone()),
         db,
@@ -241,6 +318,7 @@ async fn main() -> anyhow::Result<()> {
         voice_tts_semaphore: Arc::new(Semaphore::new(server_tts_max_concurrent_synth())),
         active_voice_sessions: Arc::new(Mutex::new(HashMap::new())),
         next_voice_session_id: Arc::new(AtomicU64::new(1)),
+        admin_cache: Arc::new(AdminSnapshotCache::new(Duration::from_secs(admin_cache_ttl_secs))),
     });
     let app = build_router(state);
     let port = std::env::var("PORT")
@@ -1495,7 +1573,13 @@ async fn admin_dashboard(
     if let Err(response) = require_admin_token(&headers) {
         return response;
     }
-    match state.db.admin_dashboard_snapshot().await {
+    let cache = &state.admin_cache;
+    let db = state.db.clone();
+    match cached_or_refresh(&cache.dashboard, cache.ttl, || async move {
+        db.admin_dashboard_snapshot().await
+    })
+    .await
+    {
         Ok(snapshot) => (StatusCode::OK, Json(ok(snapshot))).into_response(),
         Err(error) => {
             tracing::error!(error = %error, "failed to load admin dashboard");
@@ -1515,7 +1599,13 @@ async fn admin_insights(
     if let Err(response) = require_admin_token(&headers) {
         return response;
     }
-    match state.db.admin_insights_snapshot().await {
+    let cache = &state.admin_cache;
+    let db = state.db.clone();
+    match cached_or_refresh(&cache.insights, cache.ttl, || async move {
+        db.admin_insights_snapshot().await
+    })
+    .await
+    {
         Ok(snapshot) => (StatusCode::OK, Json(ok(snapshot))).into_response(),
         Err(error) => {
             tracing::error!(error = %error, "failed to load admin insights");
@@ -1535,7 +1625,13 @@ async fn admin_special(
     if let Err(response) = require_admin_token(&headers) {
         return response;
     }
-    match state.db.admin_special_snapshot().await {
+    let cache = &state.admin_cache;
+    let db = state.db.clone();
+    match cached_or_refresh(&cache.special, cache.ttl, || async move {
+        db.admin_special_snapshot().await
+    })
+    .await
+    {
         Ok(snapshot) => (StatusCode::OK, Json(ok(snapshot))).into_response(),
         Err(error) => {
             tracing::error!(error = %error, "failed to load admin special analytics");
@@ -1555,7 +1651,13 @@ async fn admin_admissions_analytics(
     if let Err(response) = require_admin_token(&headers) {
         return response;
     }
-    match state.db.admin_admissions_analytics_snapshot().await {
+    let cache = &state.admin_cache;
+    let db = state.db.clone();
+    match cached_or_refresh(&cache.admissions, cache.ttl, || async move {
+        db.admin_admissions_analytics_snapshot().await
+    })
+    .await
+    {
         Ok(snapshot) => (StatusCode::OK, Json(ok(snapshot))).into_response(),
         Err(error) => {
             tracing::error!(error = %error, "failed to load admin admissions analytics");
@@ -1575,7 +1677,13 @@ async fn admin_knowledge_coverage(
     if let Err(response) = require_admin_token(&headers) {
         return response;
     }
-    match state.db.admin_knowledge_coverage_snapshot().await {
+    let cache = &state.admin_cache;
+    let db = state.db.clone();
+    match cached_or_refresh(&cache.knowledge, cache.ttl, || async move {
+        db.admin_knowledge_coverage_snapshot().await
+    })
+    .await
+    {
         Ok(snapshot) => (StatusCode::OK, Json(ok(snapshot))).into_response(),
         Err(error) => {
             tracing::error!(error = %error, "failed to load admin knowledge coverage");
@@ -1598,7 +1706,13 @@ async fn admin_big_screen(
     if let Err(response) = require_admin_token(&headers) {
         return response;
     }
-    match state.db.admin_big_screen_snapshot().await {
+    let cache = &state.admin_cache;
+    let db = state.db.clone();
+    match cached_or_refresh(&cache.big_screen, cache.ttl, || async move {
+        db.admin_big_screen_snapshot().await
+    })
+    .await
+    {
         Ok(snapshot) => (StatusCode::OK, Json(ok(snapshot))).into_response(),
         Err(error) => {
             tracing::error!(error = %error, "failed to load admin big screen");
