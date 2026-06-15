@@ -1579,9 +1579,28 @@ function pieOption(values: Array<{ name: string; value: number }>) {
   return {
     animation: false,
     tooltip: { trigger: 'item' },
-    legend: { right: 12, top: 'middle', orient: 'vertical' },
+    legend: {
+      bottom: 0,
+      left: 'center',
+      orient: 'horizontal',
+      itemWidth: 12,
+      itemHeight: 8,
+      textStyle: { color: '#475467', fontSize: 11 },
+    },
     color: ['#2161ff', '#35c7c4', '#ffb020', '#ff6b6b', '#8b5cf6', '#94a3b8'],
-    series: [{ type: 'pie', radius: ['48%', '72%'], center: ['38%', '52%'], data: values, label: { formatter: '{b}\\n{d}%' } }],
+    series: [{
+      type: 'pie',
+      radius: ['36%', '60%'],
+      center: ['50%', '42%'],
+      avoidLabelOverlap: true,
+      data: values,
+      label: {
+        show: true,
+        formatter: '{b}\n{d}%',
+        color: '#475467',
+        fontSize: 11,
+      },
+    }],
   };
 }
 
