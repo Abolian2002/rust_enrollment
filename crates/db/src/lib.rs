@@ -2976,10 +2976,10 @@ impl Database {
               conversation_id,
               COALESCE(structured_payload->'assessment'->'province'->>'name', structured_payload->'assessment'->>'province', '未知') AS province,
               COALESCE(structured_payload->'assessment'->>'subjectType', '未知') AS subject_type,
-              COALESCE((structured_payload->'assessment'->>'score')::bigint, 0) AS score,
-              COALESCE((structured_payload->'assessment'->>'rank')::bigint, 0) AS rank,
+              COALESCE((NULLIF(structured_payload->'assessment'->>'score', ''))::numeric::bigint, 0) AS score,
+              COALESCE((NULLIF(structured_payload->'assessment'->>'rank', ''))::numeric::bigint, 0) AS rank,
               COALESCE(structured_payload->'assessment'->'major'->>'name', structured_payload->'assessment'->>'major', '未知') AS major_name,
-              COALESCE((structured_payload->'assessment'->>'probability')::bigint, 0) AS probability,
+              COALESCE((NULLIF(structured_payload->'assessment'->>'probability', ''))::numeric::bigint, 0) AS probability,
               COALESCE(structured_payload->'assessment'->>'level', '未知') AS level,
               COALESCE(structured_payload->'assessment'->>'summary', '') AS summary,
               to_char(created_at, 'YYYY-MM-DD HH24:MI:SS') AS created_at
@@ -3123,10 +3123,10 @@ impl Database {
             r#"
             SELECT 
               CASE 
-                WHEN (structured_payload->'assessment'->>'score') IS NULL THEN '未填写'
-                WHEN (structured_payload->'assessment'->>'score')::integer < 400 THEN '400分以下'
-                WHEN (structured_payload->'assessment'->>'score')::integer >= 400 AND (structured_payload->'assessment'->>'score')::integer < 500 THEN '400-500分'
-                WHEN (structured_payload->'assessment'->>'score')::integer >= 500 AND (structured_payload->'assessment'->>'score')::integer < 600 THEN '500-600分'
+                WHEN NULLIF(structured_payload->'assessment'->>'score', '') IS NULL THEN '未填写'
+                WHEN (NULLIF(structured_payload->'assessment'->>'score', ''))::numeric::integer < 400 THEN '400分以下'
+                WHEN (NULLIF(structured_payload->'assessment'->>'score', ''))::numeric::integer >= 400 AND (NULLIF(structured_payload->'assessment'->>'score', ''))::numeric::integer < 500 THEN '400-500分'
+                WHEN (NULLIF(structured_payload->'assessment'->>'score', ''))::numeric::integer >= 500 AND (NULLIF(structured_payload->'assessment'->>'score', ''))::numeric::integer < 600 THEN '500-600分'
                 ELSE '600分以上'
               END AS name,
               COUNT(*)::bigint AS value
