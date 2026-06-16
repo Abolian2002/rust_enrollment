@@ -535,6 +535,22 @@ a { color: inherit; text-decoration: none; }
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 .select-like { min-width: 142px; justify-content: space-between; }
+select.select-like {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23667085' stroke-width='2.2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px;
+  padding-right: 38px;
+  cursor: pointer;
+  outline: none;
+  text-align: left;
+}
+select.select-like:focus {
+  border-color: #2161ff;
+  box-shadow: 0 0 0 4px rgba(33, 97, 255, 0.1);
+}
 .primary-button {
   background: linear-gradient(135deg, #2161ff, #1a4fd6);
   border-color: transparent;

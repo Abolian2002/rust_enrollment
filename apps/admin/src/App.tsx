@@ -10,7 +10,6 @@ import {
   Bell,
   BookOpen,
   CheckCircle2,
-  ChevronDown,
   Clock3,
   Download,
   Eye,
@@ -295,8 +294,22 @@ function Toolbar({ children }: { children: ReactNode }) {
   return <div className="toolbar">{children}</div>;
 }
 
-function SelectLike({ children }: { children: ReactNode }) {
-  return <button type="button" className="select-like">{children}<ChevronDown size={16} /></button>;
+function Select({
+  value,
+  onChange,
+  options,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: string[];
+}) {
+  return (
+    <select value={value} onChange={(event) => onChange(event.target.value)} className="select-like">
+      {options.map((item) => (
+        <option key={item} value={item}>{item}</option>
+      ))}
+    </select>
+  );
 }
 
 function SearchBox({ value, onChange, placeholder }: { value: string; onChange: (value: string) => void; placeholder: string }) {
@@ -395,10 +408,12 @@ function DashboardPage() {
     ? dashboard.trendDays
     : dashboard.trendValues.map((_, index) => `第${index + 1}天`);
 
+  const [timeRange, setTimeRange] = useState('近7天');
+
   return (
     <>
       <div className="page-meta">
-        <SelectLike>近7天</SelectLike>
+        <Select value={timeRange} onChange={setTimeRange} options={['近7天', '近30天', '今天']} />
         <span><Clock3 size={16} /> 数据更新时间：{dashboard.updatedAt}</span>
         <RefreshAction loading={loading} onClick={loadDashboard} />
       </div>
@@ -435,6 +450,7 @@ function DashboardPage() {
 
 function InsightsPage() {
   const [month, setMonth] = useState(monthFilters[1]);
+  const [category, setCategory] = useState('全部分类');
   const [query, setQuery] = useState('');
   const [insights, setInsights] = useState<AdminInsightsSnapshot | null>(null);
   const [loadError, setLoadError] = useState('');
@@ -461,7 +477,11 @@ function InsightsPage() {
   }, [loadInsights]);
 
   const topRows = insights?.topQuestions.map((item) => [item.question, item.category, String(item.count), item.share] as [string, string, string, string]) ?? [];
-  const filtered = topRows.filter((row) => row[0].includes(query) || row[1].includes(query));
+  const filtered = topRows.filter((row) => 
+    (row[0].includes(query) || row[1].includes(query)) && 
+    (category === '全部分类' || row[1] === category)
+  );
+  const categoryOptions = ['全部分类', ...Array.from(new Set(topRows.map(row => row[1]).filter(Boolean)))];
   const wordCloud = insights?.wordCloud.map((item) => item.name) ?? [];
 
   return (
@@ -487,8 +507,8 @@ function InsightsPage() {
         ) : null}
       </Card>
       <Toolbar>
-        <SelectLike>{month}</SelectLike>
-        <SelectLike>全部分类</SelectLike>
+        <Select value={month} onChange={setMonth} options={monthFilters} />
+        <Select value={category} onChange={setCategory} options={categoryOptions} />
         <SearchBox value={query} onChange={setQuery} placeholder="搜索问题关键词..." />
         <PrimaryButton ghost><Download size={16} />导出Excel</PrimaryButton>
       </Toolbar>
@@ -572,6 +592,7 @@ function EvaluationOverviewPage() {
   const [data, setData] = useState<AdminEvaluationSummarySnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [timeRange, setTimeRange] = useState('近30天');
 
   const loadData = useCallback(() => {
     setLoading(true);
@@ -623,7 +644,7 @@ function EvaluationOverviewPage() {
   return (
     <>
       <div className="page-meta">
-        <SelectLike>近30天</SelectLike>
+        <Select value={timeRange} onChange={setTimeRange} options={['近7天', '近30天', '全年']} />
         <span><Clock3 size={16} /> 数据更新时间：{data.updatedAt}</span>
         <RefreshAction loading={loading} onClick={loadData} />
       </div>
@@ -781,6 +802,9 @@ function EvaluationPage() {
 
 function ConversationsPage() {
   const [query, setQuery] = useState('');
+  const [timeRange, setTimeRange] = useState('近7天');
+  const [provinceFilter, setProvinceFilter] = useState('全部省份');
+  const [statusFilter, setStatusFilter] = useState('全部状态');
   const [apiRows, setApiRows] = useState<AdminConversationListItem[] | null>(null);
   const [selected, setSelected] = useState<AdminConversationListItem | null>(null);
   const [detail, setDetail] = useState<AdminConversationDetail | null>(null);
@@ -811,6 +835,14 @@ function ConversationsPage() {
   useEffect(() => {
     loadConversations();
   }, [loadConversations]);
+
+  const provinceOptions = ['全部省份', ...Array.from(new Set(rows.map(row => row.province || '未知'))).filter(Boolean)];
+  const statusOptions = ['全部状态', ...Array.from(new Set(rows.map(row => row.status).filter(Boolean)))];
+  const filteredRows = rows.filter((row) => {
+    const matchProvince = provinceFilter === '全部省份' || (row.province || '未知') === provinceFilter;
+    const matchStatus = statusFilter === '全部状态' || row.status === statusFilter;
+    return matchProvince && matchStatus;
+  });
 
   function openConversation(row: AdminConversationListItem) {
     setSelected(row);
@@ -850,19 +882,21 @@ function ConversationsPage() {
   return (
     <>
       <Toolbar>
-        <SelectLike>近7天</SelectLike><SelectLike>全部省份</SelectLike><SelectLike>全部状态</SelectLike>
+        <Select value={timeRange} onChange={setTimeRange} options={['近7天', '近30天', '全部']} />
+        <Select value={provinceFilter} onChange={setProvinceFilter} options={provinceOptions} />
+        <Select value={statusFilter} onChange={setStatusFilter} options={statusOptions} />
         <SearchBox value={query} onChange={setQuery} placeholder="搜索对话内容..." />
         <RefreshAction loading={loading} onClick={loadConversations} />
         <PrimaryButton ghost><Download size={16} />导出</PrimaryButton>
       </Toolbar>
       {loadError ? <LoadError message={loadError} onRetry={loadConversations} /> : null}
-      <Card title={`对话记录列表 ${rows.length} 条`}>
-        {loading && !rows.length ? <EmptyState compact>正在读取真实对话记录...</EmptyState> : null}
-        {!loading && rows.length === 0 ? <EmptyState compact>暂无匹配的真实对话记录。</EmptyState> : null}
-        {rows.length ? (
+      <Card title={`对话记录列表 ${filteredRows.length} 条`}>
+        {loading && !filteredRows.length ? <EmptyState compact>正在读取真实对话记录...</EmptyState> : null}
+        {!loading && filteredRows.length === 0 ? <EmptyState compact>暂无匹配的真实对话记录。</EmptyState> : null}
+        {filteredRows.length ? (
           <DataTable
             headers={['会话ID', '用户省份', '对话时间', '问题数', '状态', '人工介入', '最近问题', '操作']}
-            rows={rows.map((row) => [
+            rows={filteredRows.map((row) => [
               row.id,
               row.province,
               row.updatedAt,
@@ -914,10 +948,11 @@ function ConversationsPage() {
 
 function KnowledgePage() {
   const [query, setQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState('全部类型');
+  const [statusFilter, setStatusFilter] = useState('全部状态');
   const [apiItems, setApiItems] = useState<KnowledgeItem[] | null>(null);
   const [chunks, setChunks] = useState<AdminKnowledgeChunkItem[]>([]);
   const [coverage, setCoverage] = useState<AdminKnowledgeCoverageSnapshot | null>(null);
-  const [faqTotal, setFaqTotal] = useState<number | null>(null);
   const [chunkTotal, setChunkTotal] = useState<number | null>(null);
   const [loadError, setLoadError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -937,7 +972,6 @@ function KnowledgePage() {
         setApiItems(faqList.items);
         setChunks(chunkList.items);
         setCoverage(coverageData);
-        setFaqTotal(faqList.total);
         setChunkTotal(chunkList.total);
         setLoadError('');
       })
@@ -945,7 +979,6 @@ function KnowledgePage() {
         setApiItems([]);
         setChunks([]);
         setCoverage(null);
-        setFaqTotal(null);
         setChunkTotal(null);
         setLoadError(error.message);
       })
@@ -992,10 +1025,15 @@ function KnowledgePage() {
     }
   }
 
+  const filteredFaqs = rows.filter((item) => {
+    return statusFilter === '全部状态' || item.status === (statusFilter === '启用' ? '启用' : '禁用');
+  });
+
   return (
     <>
       <Toolbar>
-        <SelectLike>全部</SelectLike>
+        <Select value={typeFilter} onChange={setTypeFilter} options={['全部类型', '标准问答库 (FAQ)', 'PDF文档片段']} />
+        <Select value={statusFilter} onChange={setStatusFilter} options={['全部状态', '启用', '禁用']} />
         <SearchBox value={query} onChange={setQuery} placeholder="搜索问答内容..." />
         <RefreshAction loading={loading} onClick={loadKnowledge} />
         <PrimaryButton ghost onClick={() => setModal('import')}><Upload size={16} />批量导入</PrimaryButton>
@@ -1026,30 +1064,34 @@ function KnowledgePage() {
         </Card>
         </>
       ) : null}
-      <Card title={`标准问答库 ${faqTotal ?? rows.length} 条`}>
-        {loading && !rows.length ? <EmptyState compact>正在读取真实 FAQ...</EmptyState> : null}
-        {!loading && rows.length === 0 ? <EmptyState compact>暂无匹配的真实 FAQ。</EmptyState> : null}
-        {rows.length ? <DataTable headers={['ID', '标准问题', '相似问法', '标准答案', '来源', '更新时间', '状态', '命中', '操作']} rows={rows.map((item) => [item.id, item.question, item.similar, item.answer, item.source, item.updatedAt, <StatusBadge value={item.status} />, item.hits, <button className="table-action" type="button" onClick={() => openFaqEditor(item)}>编辑</button>])} /> : null}
-      </Card>
-      <Card title={`PDF 文档片段审计 ${chunkTotal ?? chunks.length} 条`} action={<span className="soft-pill">招生简章 / 培养方案</span>}>
-        {chunks.length ? (
-          <div className="chunk-list">
-            {chunks.map((chunk) => (
-              <article key={chunk.id}>
-                <div className="chunk-meta">
-                  <b>{chunk.title || chunk.documentKind || '未命名片段'}</b>
-                  <span>{chunk.college || '全校'}</span>
-                  {chunk.majorName ? <span>{chunk.majorName}</span> : null}
-                  <time>{chunk.updatedAt}</time>
-                </div>
-                <p>{chunk.excerpt}</p>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <EmptyState compact>没有匹配到真实文档片段。</EmptyState>
-        )}
-      </Card>
+      {typeFilter === '全部类型' || typeFilter === '标准问答库 (FAQ)' ? (
+        <Card title={`标准问答库 ${filteredFaqs.length} 条`}>
+          {loading && !filteredFaqs.length ? <EmptyState compact>正在读取真实 FAQ...</EmptyState> : null}
+          {!loading && filteredFaqs.length === 0 ? <EmptyState compact>暂无匹配的真实 FAQ。</EmptyState> : null}
+          {filteredFaqs.length ? <DataTable headers={['ID', '标准问题', '相似问法', '标准答案', '来源', '更新时间', '状态', '命中', '操作']} rows={filteredFaqs.map((item) => [item.id, item.question, item.similar, item.answer, item.source, item.updatedAt, <StatusBadge value={item.status} />, item.hits, <button className="table-action" type="button" onClick={() => openFaqEditor(item)}>编辑</button>])} /> : null}
+        </Card>
+      ) : null}
+      {typeFilter === '全部类型' || typeFilter === 'PDF文档片段' ? (
+        <Card title={`PDF 文档片段审计 ${chunkTotal ?? chunks.length} 条`} action={<span className="soft-pill">招生简章 / 培养方案</span>}>
+          {chunks.length ? (
+            <div className="chunk-list">
+              {chunks.map((chunk) => (
+                <article key={chunk.id}>
+                  <div className="chunk-meta">
+                    <b>{chunk.title || chunk.documentKind || '未命名片段'}</b>
+                    <span>{chunk.college || '全校'}</span>
+                    {chunk.majorName ? <span>{chunk.majorName}</span> : null}
+                    <time>{chunk.updatedAt}</time>
+                  </div>
+                  <p>{chunk.excerpt}</p>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <EmptyState compact>没有匹配到真实文档片段。</EmptyState>
+          )}
+        </Card>
+      ) : null}
       <Card title="未知问题归集池" action={<span className="soft-pill amber">待接入真实事件日志</span>}>
         <EmptyState compact>未知问题归集需要接入低置信度回答、无证据回答、人工反馈等真实事件日志；当前不展示临时数据。</EmptyState>
       </Card>
@@ -1307,6 +1349,7 @@ function SettingsPage() {
 
 function BigScreenPage() {
   const [category, setCategory] = useState('总榜');
+  const [timeRange, setTimeRange] = useState('近30天');
   const [screen, setScreen] = useState<AdminBigScreenSnapshot | null>(null);
   const [loadError, setLoadError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -1397,7 +1440,7 @@ function BigScreenPage() {
       </div>
       <section className="big-grid">
         <aside className="big-left">
-          <BigPanel title="用户行为数据统计" action={<SelectLike>近30天</SelectLike>}>
+          <BigPanel title="用户行为数据统计" action={<Select value={timeRange} onChange={setTimeRange} options={['近7天', '近30天', '全年']} />}>
             <div className="behavior-grid">
               {behaviorData.length ? behaviorData.map(([label, value, delta, points], index) => (
                 <div key={label}>
