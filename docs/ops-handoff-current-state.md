@@ -575,10 +575,91 @@ ss -ltnp | grep ':10090'
 
 这些文档记录了香港中转、Cloudflare Access、语音服务恢复、CosyVoice fp16 测试、招生覆盖物化视图等历史操作。
 
-## 17. 本次验证时间
+## 17. 后台白屏修复、免跳板机直连与微调模型上线记录（2026-06-18）
 
-- 本地时间：`2026-06-14 19:55 CST` 左右。
-- 远端 `train-2` 时间：`2026-06-14 17:38 CST` 左右曾验证。
-- 香港服务器时间：`2026-06-14 17:38 CST` 左右曾验证。
+### 17.1 后台白屏故障修复
+- **故障现象**：点击后台的“数据驾驶舱”（Dashboard）时，整个页面变为空白，应用崩溃。
+- **故障排查**：在 [App.tsx](file:///home/scm2002/Code/rust_enrollment/apps/admin/src/App.tsx) 中定位到 `DashboardPage` 组件。其内部的 React 状态 Hook `const [timeRange, setTimeRange] = useState('近7天');` 被写在了 conditional returns（提前返回语句，如 `if (loading && !dashboard) return ...`）之后。这违反了 React 的 Hook 调用规则（Rules of Hooks），导致组件在数据异步加载完成并重绘时，调用 Hook 的顺序与数量发生变化而报错。
+- **修复方案**：已将 `timeRange` 状态 Hook 的声明移至 `DashboardPage` 组件主体的最上方（在任何提前返回逻辑之前）。
+- **验证与部署**：经本地 `npm run build` 成功通过编译；使用 Playwright 自动化脚本截图确认页面框架与加载态一切正常，无 React 错误。修复包已于 2026-06-16 编译打包并同步发布到香港服务器的静态根目录 `/var/www/hnu-enrollment-admin`，白屏问题彻底解决。
+
+### 17.2 免跳板机直连项目服务器 (10.10.200.13)
+- **网络背景**：本地 WSL 环境默认路由中未配置 `10.10.x.x` 内网段，而本地运行的 SOCKS5 代理（Clash，端口 `10090`）是由已打通内网路由的宿主机提供的。
+- **直连方案**：利用 SSH 的 `ProxyCommand` 参数与 `nc` (netcat) 建立 TCP 转发隧道，通过本地的 SOCKS5 代理直连项目服务器，**可以免去 Tailscale 跳板机 (100.95.71.110) 的二次浏览器授权验证与中转**。
+- **连接命令**：
+  ```bash
+  sshpass -p 'qwer123456' ssh \
+    -o PreferredAuthentications=password \
+    -o StrictHostKeyChecking=no \
+    -o ProxyCommand="nc -X 5 -x 127.0.0.1:10090 %h %p" \
+    t2_enroll_ai@10.10.200.13
+  ```
+
+### 17.3 下线三路基础模型实例并接入微调模型 (2026-06-18)
+- **微调模型 API**：运行在项目服务器端口 `7862` (本地即 `http://127.0.0.1:7862/v1`)，基于 LLaMA-Factory 启动，使用 Qwen-35B-A3B 基础模型外挂 LoRA 适配器，支持 OpenAI 标准格式。
+- **操作步骤**：
+  1. **下线原三路基础模型 llama-server**：在项目服务器上杀死 `18081`、`18082`、`18083` 端口上运行的 `llama-server` 基础模型进程并清理 PID 文件：
+     ```bash
+     kill 1813602 1813603 1813604
+     rm -f /home/t2_enroll_ai/model-service-run/qwen-llama-*.pid
+     ```
+  2. **切换 Rust API 配置指向**：修改项目服务器上的 `.run/api.env` 文件，将 API 请求基础 URL 指向微调模型端口：
+     ```text
+     OPENAI_COMPAT_BASE_URL=http://127.0.0.1:7862/v1
+     ```
+  3. **重启 API 服务**：
+     ```bash
+     kill $(cat /home/t2_enroll_ai/rust_enrollment/.run/api.pid)
+     sleep 2
+     cd /home/t2_enroll_ai/rust_enrollment && ./start-api.sh
+     ```
+     新启动的 API 进程 PID 为 `1308302`，成功监听 `4000` 端口，验证可用。
+
+### 17.4 如何恢复/重新上线三路 llama-server 基础模型
+1. **重新启动三路 llama-server 基础模型实例**：
+   在项目服务器上执行如下启动命令（或直接执行 `/home/t2_enroll_ai/model-service-stack/start_high_concurrency.sh`）：
+   ```bash
+   # 启动实例 0
+   cd /home/t2_enroll_ai/llama.cpp
+   nohup env CUDA_VISIBLE_DEVICES="0,1" /home/t2_enroll_ai/llama.cpp/build/bin/llama-server \
+     -m /home/t2_enroll_ai/models/Qwen3.6-35B-A3B-MTP-GGUF/BF16/Qwen3.6-35B-A3B-BF16-00001-of-00002.gguf \
+     --alias qwen3.6-35b-a3b-bf16 --host 0.0.0.0 --port 18081 \
+     -c 8192 --parallel 1 -ngl 999 --split-mode layer --jinja --reasoning off --reasoning-budget 0 \
+     --api-key ragflow-local-qwen > /home/t2_enroll_ai/model-service-logs/qwen-llama-0.log 2>&1 &
+   echo $! > /home/t2_enroll_ai/model-service-run/qwen-llama-0.pid
+
+   # 启动实例 1
+   nohup env CUDA_VISIBLE_DEVICES="2,3" /home/t2_enroll_ai/llama.cpp/build/bin/llama-server \
+     -m /home/t2_enroll_ai/models/Qwen3.6-35B-A3B-MTP-GGUF/BF16/Qwen3.6-35B-A3B-BF16-00001-of-00002.gguf \
+     --alias qwen3.6-35b-a3b-bf16 --host 0.0.0.0 --port 18082 \
+     -c 8192 --parallel 1 -ngl 999 --split-mode layer --jinja --reasoning off --reasoning-budget 0 \
+     --api-key ragflow-local-qwen > /home/t2_enroll_ai/model-service-logs/qwen-llama-1.log 2>&1 &
+   echo $! > /home/t2_enroll_ai/model-service-run/qwen-llama-1.pid
+
+   # 启动实例 2
+   nohup env CUDA_VISIBLE_DEVICES="4,5" /home/t2_enroll_ai/llama.cpp/build/bin/llama-server \
+     -m /home/t2_enroll_ai/models/Qwen3.6-35B-A3B-MTP-GGUF/BF16/Qwen3.6-35B-A3B-BF16-00001-of-00002.gguf \
+     --alias qwen3.6-35b-a3b-bf16 --host 0.0.0.0 --port 18083 \
+     -c 8192 --parallel 1 -ngl 999 --split-mode layer --jinja --reasoning off --reasoning-budget 0 \
+     --api-key ragflow-local-qwen > /home/t2_enroll_ai/model-service-logs/qwen-llama-2.log 2>&1 &
+   echo $! > /home/t2_enroll_ai/model-service-run/qwen-llama-2.pid
+   ```
+2. **将 Rust API 配置还原**：
+   修改项目服务器的 `/home/t2_enroll_ai/rust_enrollment/.run/api.env` 文件，将 API 请求基础 URL 指回负载均衡端口：
+   ```text
+   OPENAI_COMPAT_BASE_URL=http://127.0.0.1:18080/v1
+   ```
+3. **重启 Rust API 后端**：
+   ```bash
+   kill $(cat /home/t2_enroll_ai/rust_enrollment/.run/api.pid)
+   sleep 2
+   cd /home/t2_enroll_ai/rust_enrollment && ./start-api.sh
+   ```
+
+## 18. 本次验证时间
+
+- 本地时间：`2026-06-18 15:30 CST` 左右。
+- 远端 `train-2` 时间：`2026-06-18 14:25 CST` 左右。
+- 香港服务器时间：`2026-06-18 14:25 CST` 左右。
 
 部分 SSH 命令曾因握手拥塞或 Tailscale 二次认证失败，本文中已经标注哪些是本次直接验证、哪些来自已有 runbook。
