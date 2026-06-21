@@ -295,10 +295,10 @@ export default function ChatPage() {
       setLocalRichMessages([]);
       if (voice.usesServerVoice) {
         stopActiveVoiceStream();
-        void voice.interrupt();
-      } else {
-        await voice.interrupt();
       }
+      // Interrupt previous playback and start preparing voice context synchronously in the user click gesture tick
+      void voice.interrupt();
+      void voice.prepare();
       await submitMessage(message);
     },
     [submitMessage, voice]
@@ -323,15 +323,24 @@ export default function ChatPage() {
           ...(localAnswer.video ? { video: localAnswer.video } : {})
         }
       ]);
+      if (voice.usesServerVoice) {
+        // For server voice, speakText handles its own preparation/play
+        void (async () => {
+          try {
+            await voice.speakText(localAnswer.answer);
+          } catch {
+            await voice.markUnavailable();
+          }
+        })();
+        return;
+      }
+
+      // Interrupt previous playback and start preparing voice context synchronously in the user click gesture tick
+      void voice.interrupt();
+      const prepPromise = voice.prepare();
       void (async () => {
         try {
-          if (voice.usesServerVoice) {
-            await voice.speakText(localAnswer.answer);
-            return;
-          }
-
-          await voice.interrupt();
-          const ready = await voice.prepare();
+          const ready = await prepPromise;
           if (!ready) {
             return;
           }

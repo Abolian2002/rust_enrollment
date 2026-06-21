@@ -33,9 +33,12 @@ export class PCMAudioPlayer {
     }
 
     this.audioContext = new AudioContextClass({ sampleRate: this.sampleRate });
+    console.log(`[PCMAudioPlayer] Created AudioContext with sample rate ${this.sampleRate}. Current state: ${this.audioContext.state}`);
 
     if (this.audioContext.state === "suspended") {
+      console.log("[PCMAudioPlayer] AudioContext is suspended. Attempting to resume...");
       await this.audioContext.resume();
+      console.log(`[PCMAudioPlayer] AudioContext state after resume: ${this.audioContext.state}`);
     }
 
     if (!this.audioContext.audioWorklet) {
@@ -71,6 +74,17 @@ export class PCMAudioPlayer {
 
   pushPCM(arrayBuffer: ArrayBuffer): void {
     if (!this.isConnected || !this.workletNode) return;
+
+    if (this.audioContext && this.audioContext.state === "suspended") {
+      console.log("[PCMAudioPlayer] AudioContext detected suspended during playback. Resuming...");
+      void this.audioContext.resume();
+    }
+
+    // Diagnostic log to verify bytes are arriving
+    if (arrayBuffer.byteLength > 0) {
+      console.log(`[PCMAudioPlayer] pushPCM: received ${arrayBuffer.byteLength} bytes`);
+    }
+
     let bytes = new Uint8Array(arrayBuffer);
 
     if (this.pendingByte !== null) {
