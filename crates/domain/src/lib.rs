@@ -23,6 +23,8 @@ pub struct ChatRequest {
     pub message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub profile: Option<ChatProfile>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

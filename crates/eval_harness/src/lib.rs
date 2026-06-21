@@ -99,6 +99,7 @@ pub async fn run_case(
                 conversation_id: Some(conversation_id.clone()),
                 message: turn.message.clone(),
                 profile: None,
+                model: None,
             })
             .send()
             .await?

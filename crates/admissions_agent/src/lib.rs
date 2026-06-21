@@ -31,6 +31,7 @@ pub struct AdmissionsAgent {
     retrieval: RetrievalService,
     compression_config: CompressionConfig,
     llm: Option<OpenAiCompatibleClient>,
+    llm_theirs: Option<OpenAiCompatibleClient>,
     turn_locks: Arc<Mutex<HashMap<String, Arc<Mutex<()>>>>>,
 }
 
@@ -51,16 +52,34 @@ struct PreparedChatTurn {
 impl AdmissionsAgent {
     pub fn new(db: Database) -> Self {
         let retrieval = RetrievalService::new(db.clone());
+        let competitor_base_url = std::env::var("COMPETITOR_LLM_BASE_URL")
+            .unwrap_or_else(|_| "http://10.10.200.11:30080/v1".to_owned());
+        let competitor_model = std::env::var("COMPETITOR_LLM_MODEL")
+            .unwrap_or_else(|_| "/data/qwen3.5-35b-merged".to_owned());
+        let competitor_api_key = std::env::var("COMPETITOR_LLM_API_KEY")
+            .unwrap_or_else(|_| "none".to_owned());
+        let llm_theirs = Some(OpenAiCompatibleClient::new(
+            competitor_base_url,
+            competitor_api_key,
+            competitor_model,
+        ));
         Self {
             db,
             retrieval,
             compression_config: CompressionConfig::default(),
             llm: OpenAiCompatibleClient::from_env_for_synthesis(),
+            llm_theirs,
             turn_locks: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 
     pub async fn chat(&self, input: ChatRequest) -> Result<ChatReply> {
+        let active_llm = match input.model.as_deref() {
+            Some("theirs") => &self.llm_theirs,
+            _ => &self.llm,
+        };
+        let mut llm_model = active_llm.as_ref().map(|client| client.model().to_owned());
+
         let conversation_id = self
             .db
             .get_or_create_conversation(input.conversation_id.as_deref())
@@ -73,10 +92,10 @@ impl AdmissionsAgent {
         let mut final_reply = prepared.draft_reply.clone();
         let mut model_call_count = 0usize;
         let mut synthesis_used = false;
-        let mut llm_model = self.llm.as_ref().map(|client| client.model().to_owned());
         if should_synthesize(&prepared.structured_result) {
             match self
                 .synthesize_reply(
+                    active_llm.as_ref(),
                     &prepared.user_message,
                     &final_reply,
                     &prepared.structured_result,
@@ -133,6 +152,12 @@ impl AdmissionsAgent {
         F: FnMut(String, String) -> Fut + Send,
         Fut: Future<Output = bool> + Send,
     {
+        let active_llm = match input.model.as_deref() {
+            Some("theirs") => &self.llm_theirs,
+            _ => &self.llm,
+        };
+        let mut llm_model = active_llm.as_ref().map(|client| client.model().to_owned());
+
         let conversation_id = self
             .db
             .get_or_create_conversation(input.conversation_id.as_deref())
@@ -145,11 +170,10 @@ impl AdmissionsAgent {
         let mut final_reply = prepared.draft_reply.clone();
         let mut model_call_count = 0usize;
         let mut synthesis_used = false;
-        let mut llm_model = self.llm.as_ref().map(|client| client.model().to_owned());
         let mut emitted_any = false;
 
         if should_synthesize(&prepared.structured_result) {
-            if let Some(llm) = &self.llm {
+            if let Some(llm) = active_llm {
                 match self.synthesis_messages(
                     &prepared.user_message,
                     &final_reply,
@@ -843,6 +867,7 @@ impl AdmissionsAgent {
 
     async fn synthesize_reply(
         &self,
+        llm: Option<&OpenAiCompatibleClient>,
         user_message: &str,
         draft_reply: &str,
         structured_result: &ChatStructuredResult,
@@ -850,7 +875,7 @@ impl AdmissionsAgent {
         memory: &ResolvedMemory,
         compressed: &agent_runtime::CompressedContext,
     ) -> Result<Option<String>> {
-        let Some(llm) = &self.llm else {
+        let Some(llm) = llm else {
             return Ok(None);
         };
         let messages = self.synthesis_messages(

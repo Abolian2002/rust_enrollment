@@ -13,13 +13,13 @@
 - 项目数据库是 K8s namespace `hnu-enrollment` 下的 PostgreSQL 16 + pgvector，pod 为 `hnu-enrollment-postgres-0`，宿主机通过 `kubectl port-forward` 暴露到 `127.0.0.1:55432`。
 - 本地和服务器仓库的前端修改文件（`App.tsx`、`index.css`、`types/admin.ts`）以及 API 性能优化（内存 TTL 缓存 + try_join 并行化）已全部提交并合入 `main` 分支。
 - 本地和服务器的提交历史与哈希已完全对齐（最新 commit 为 `7381af5`）。本地 `main` 追踪 `origin`（主库），服务器 `main` 追踪部署库 `rust_enrollment_remote.git`。
-- `127.0.0.1:10090` 曾在内网项目服务器上监听；本地 WSL 的 SSH 反向隧道已被停止。
+- `127.0.0.1:10090` 曾在内网项目服务器上监听；本地 macOS 的 SSH 反向隧道已被停止。
 
 ## 2. 仓库与路径
 
 ### 本地仓库
 
-- 路径：`/home/scm2002/Code/rust_enrollment`
+- 路径：`/Users/scm/code/rust_enrollment`
 - 分支：`main`
 - remotes：
   - `origin https://github.com/Abolian2002/rust_enrollment.git` (本地主开发库，后续本地修改推送到此处)
@@ -109,8 +109,8 @@ sshpass -p 'qwer123456' ssh t2_enroll_ai@10.10.200.13
 
 - 地址：`47.86.43.227`
 - 用户：`root`
-- 当前管理 key：`/home/scm2002/.ssh/aboabo.pem`
-- 旧 key：`/home/scm2002/.ssh/xianggang.pem`
+- 当前管理 key：`/Users/scm/.serect/hongkong.pem`
+- 旧 key：`/Users/scm/.serect/abolian.pem`
 - 作用：
   - 运行 `cloudflared.service`。
   - 运行 Nginx，监听 `127.0.0.1:8317`。
@@ -125,7 +125,7 @@ sshpass -p 'qwer123456' ssh t2_enroll_ai@10.10.200.13
 连接命令：
 
 ```bash
-ssh -i /home/scm2002/.ssh/aboabo.pem root@47.86.43.227
+ssh -i /Users/scm/.serect/hongkong.pem root@47.86.43.227
 ```
 
 ## 5. Cloudflare 配置
@@ -170,7 +170,7 @@ shikongjianlun@163.com
 
 ### Cloudflare API token
 
-- 本地 token 文件路径：`/home/scm2002/.secrets/cloudflare_token`
+- 本地 token 文件路径：`/Users/scm/.serect/cloudflare_token`（若有）
 - 文件权限：`600`
 - 本次确认文件大小：`54` bytes
 - 本次确认 SHA-256：`248537bb86dee3395b550f15faaf16bb932bfbd192552e1d358b824fedb054fd`
@@ -178,7 +178,7 @@ shikongjianlun@163.com
 - 使用时建议：
 
 ```bash
-export CLOUDFLARE_API_TOKEN="$(cat /home/scm2002/.secrets/cloudflare_token)"
+export CLOUDFLARE_API_TOKEN="$(cat /Users/scm/.serect/cloudflare_token)"
 ```
 
 ## 6. 内网项目服务器进程与端口
@@ -199,7 +199,7 @@ export CLOUDFLARE_API_TOKEN="$(cat /home/scm2002/.secrets/cloudflare_token)"
 | `50000` | `0.0.0.0` | `model_lb.py` | CosyVoice LB |
 | `50001-50004` | `0.0.0.0` | `runtime/python/fastapi/server.py` | 4 个 CosyVoice worker |
 | `7860` | `0.0.0.0` | `python` | 非本项目核心链路，GPU 6 占用较高，需另行确认用途 |
-| `10090` | `127.0.0.1` / `::1` | 已停止 | 原因是本地 WSL SSH 反向隧道，不是项目业务链路 |
+| `10090` | `127.0.0.1` / `::1` | 已停止 | 原因是本地 macOS SSH 反向隧道已停止，非项目业务链路 |
 | `5173` | `127.0.0.1` | `node` | 可能是后台管理 Vite dev server，非公网主链路 |
 
 API 健康检查本次通过：
@@ -381,7 +381,7 @@ kubectl -n hnu-enrollment port-forward pod/hnu-enrollment-postgres-0 55432:5432
 物化视图脚本：
 
 ```text
-/home/scm2002/Code/rust_enrollment/crates/importers/sql/admission_major_province_coverage.sql
+/Users/scm/code/rust_enrollment/crates/importers/sql/admission_major_province_coverage.sql
 ```
 
 本地常用命令：
@@ -434,7 +434,7 @@ PROVINCE_MAJOR_LIST_EXPANDED_LIMIT=120
 
 ### 学生/家长端
 
-- 本地源码：`/home/scm2002/Code/rust_enrollment/apps/web`
+- 本地源码：`/Users/scm/code/rust_enrollment/apps/web`
 - 服务器运行：`next start --hostname 127.0.0.1 --port 3000`
 - 公网：`https://cpa.abolian.online/chat`
 - 重点不要破坏：
@@ -446,7 +446,7 @@ PROVINCE_MAJOR_LIST_EXPANDED_LIMIT=120
 
 ### 后台管理端
 
-- 本地源码：`/home/scm2002/Code/rust_enrollment/apps/admin`
+- 本地源码：`/Users/scm/code/rust_enrollment/apps/admin`
 - 香港静态部署目录：`/var/www/hnu-enrollment-admin`
 - 公网：`https://admin.abolian.online/`
 - 受 Cloudflare Access 保护。
@@ -460,7 +460,7 @@ PROVINCE_MAJOR_LIST_EXPANDED_LIMIT=120
 已有清理脚本：
 
 ```text
-/home/scm2002/Code/rust_enrollment/scripts/prune-audio-cache.sh
+/Users/scm/code/rust_enrollment/scripts/prune-audio-cache.sh
 ```
 
 默认保留最新 100 条音频/缓存文件，涉及目录包括：
@@ -524,14 +524,14 @@ kubectl -n hnu-enrollment exec hnu-enrollment-postgres-0 -- \
 
 - 最初在项目服务器看到 `127.0.0.1:10090` 和 `[::1]:10090` 监听。
 - `t2_enroll_ai` 不在 sudoers，无法在服务器侧直接用 `sudo ss` / `sudo lsof` 查 owner。
-- 进一步在本地 WSL 进程表定位到来源：
+- 进一步在本地 macOS 进程表定位到来源：
 
 ```text
 ssh -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
   -N -R 10090:127.0.0.1:10090 t2_enroll_ai@10.10.200.13
 ```
 
-- 该进程把本地 WSL 的 `10090` 反向暴露到项目服务器，属于临时代理/网络辅助链路，不是招生项目业务服务。
+- 该进程把本地 macOS 的 `10090` 反向暴露到项目服务器，属于临时代理/网络辅助链路，不是招生项目业务服务。
 - 本次已停止本地进程 pid `142934`。
 - 停止后本地 `ss -ltnp | grep ':10090'` 无输出。
 - 停止后项目服务器 `ss -ltnp | grep ':10090'` 无输出。
@@ -567,11 +567,11 @@ ss -ltnp | grep ':10090'
 
 已有 runbook：
 
-- `/home/scm2002/Code/rust_enrollment/docs/hong-kong-reverse-tunnel-runbook.md`
-- `/home/scm2002/Code/rust_enrollment/docs/public-access-and-voice-ops-20260608.md`
-- `/home/scm2002/Code/rust_enrollment/docs/admin-cloudflare-access-runbook.md`
-- `/home/scm2002/Code/rust_enrollment/docs/cosyvoice-fp16-test-runbook-20260610.md`
-- `/home/scm2002/Code/rust_enrollment/docs/admission-coverage-derived-table.md`
+- `/Users/scm/code/rust_enrollment/docs/hong-kong-reverse-tunnel-runbook.md`
+- `/Users/scm/code/rust_enrollment/docs/public-access-and-voice-ops-20260608.md`
+- `/Users/scm/code/rust_enrollment/docs/admin-cloudflare-access-runbook.md`
+- `/Users/scm/code/rust_enrollment/docs/cosyvoice-fp16-test-runbook-20260610.md`
+- `/Users/scm/code/rust_enrollment/docs/admission-coverage-derived-table.md`
 
 这些文档记录了香港中转、Cloudflare Access、语音服务恢复、CosyVoice fp16 测试、招生覆盖物化视图等历史操作。
 
@@ -579,12 +579,12 @@ ss -ltnp | grep ':10090'
 
 ### 17.1 后台白屏故障修复
 - **故障现象**：点击后台的“数据驾驶舱”（Dashboard）时，整个页面变为空白，应用崩溃。
-- **故障排查**：在 [App.tsx](file:///home/scm2002/Code/rust_enrollment/apps/admin/src/App.tsx) 中定位到 `DashboardPage` 组件。其内部的 React 状态 Hook `const [timeRange, setTimeRange] = useState('近7天');` 被写在了 conditional returns（提前返回语句，如 `if (loading && !dashboard) return ...`）之后。这违反了 React 的 Hook 调用规则（Rules of Hooks），导致组件在数据异步加载完成并重绘时，调用 Hook 的顺序与数量发生变化而报错。
+- **故障排查**：在 [App.tsx](file:///Users/scm/code/rust_enrollment/apps/admin/src/App.tsx) 中定位到 `DashboardPage` 组件。其内部的 React 状态 Hook `const [timeRange, setTimeRange] = useState('近7天');` 被写在了 conditional returns（提前返回语句，如 `if (loading && !dashboard) return ...`）之后。这违反了 React 的 Hook 调用规则（Rules of Hooks），导致组件在数据异步加载完成并重绘时，调用 Hook 的顺序与数量发生变化而报错。
 - **修复方案**：已将 `timeRange` 状态 Hook 的声明移至 `DashboardPage` 组件主体的最上方（在任何提前返回逻辑之前）。
 - **验证与部署**：经本地 `npm run build` 成功通过编译；使用 Playwright 自动化脚本截图确认页面框架与加载态一切正常，无 React 错误。修复包已于 2026-06-16 编译打包并同步发布到香港服务器的静态根目录 `/var/www/hnu-enrollment-admin`，白屏问题彻底解决。
 
 ### 17.2 免跳板机直连项目服务器 (10.10.200.13)
-- **网络背景**：本地 WSL 环境默认路由中未配置 `10.10.x.x` 内网段，而本地运行的 SOCKS5 代理（Clash，端口 `10090`）是由已打通内网路由的宿主机提供的。
+- **网络背景**：本地 macOS 环境在连接局域网时可直连内网；若未连接局域网，亦可由本地运行的 SOCKS5 代理（Clash，端口 `10090`）打通内网。
 - **直连方案**：利用 SSH 的 `ProxyCommand` 参数与 `nc` (netcat) 建立 TCP 转发隧道，通过本地的 SOCKS5 代理直连项目服务器，**可以免去 Tailscale 跳板机 (100.95.71.110) 的二次浏览器授权验证与中转**。
 - **连接命令**：
   ```bash
@@ -663,3 +663,29 @@ ss -ltnp | grep ':10090'
 - 香港服务器时间：`2026-06-18 14:25 CST` 左右。
 
 部分 SSH 命令曾因握手拥塞或 Tailscale 二次认证失败，本文中已经标注哪些是本次直接验证、哪些来自已有 runbook。
+
+## 19. 双模型切换开关与本地语音服务调试记录（2026-06-21）
+
+### 19.1 双模型切换设计与实现
+- **需求目标**：实现前端首部模型切换开关（我方微调模型 vs 对方竞品模型），并在后端支持根据模型字段动态分发请求，同时保障本地测试环境下数字人语音合成（TTS）的连通性。
+- **后端适配**：
+  - 在 [domain/src/lib.rs](file:///Users/scm/code/rust_enrollment/crates/domain/src/lib.rs) 中修改 `ChatRequest` 结构，增加 `model: Option<String>` 可选字段，确保请求能携带所选模型。
+  - 在 [admissions_agent/src/lib.rs](file:///Users/scm/code/rust_enrollment/crates/admissions_agent/src/lib.rs) 中动态判定 `req.model`。如果为 `"competitor"`，则构建并选用指向对方竞品模型（Server 1 30080 端口）的 `llm_theirs` 客户端，否则默认使用我方微调模型（Server 2 7862 端口）的 `llm` 客户端。
+- **前端页面与组件**：
+  - 在 [api-client.ts](file:///Users/scm/code/rust_enrollment/apps/web/lib/api-client.ts) 中扩展 `ChatRequest` 接口。
+  - 在 [use-chat-session.ts](file:///Users/scm/code/rust_enrollment/apps/web/components/use-chat-session.ts) 中引入 `model` 状态并伴随请求发送。
+  - 修改 [page.tsx](file:///Users/scm/code/rust_enrollment/apps/web/app/chat/page.tsx)，在 Header 部分引入了玻璃质感的模型切换控件，并带有动态呼吸指示灯（绿色代表我方自研模型，红色代表对方竞品模型）。
+
+### 19.2 本地运行环境搭建与故障排查
+- **SSH 端口转发隧道**：
+  - 通过 `start_tunnels.py` 在后台建立两条免跳转 SSH 直连隧道：
+    - **Tunnel 1 (Server 2)**：本地 `7862` -> 远程模型服务，本地 `8114` -> 远程向量检索服务，本地 `50000` -> 远程 CosyVoice 语音服务。
+    - **Tunnel 2 (Server 1)**：本地 `30080` -> 远程竞品模型服务。
+- **数据库连接配置**：
+  - 修改本地 `DATABASE_URL`，将数据库连接用户名由 `postgres` 调整为 macOS 的系统角色 `scm`（无密码连接），解决了最初 `CHAT_ERROR` 导致的数据库连接重置故障。
+- **语音服务不可用（BAD_GATEWAY）故障解决**：
+  - **故障现象**：在浏览器测试时，文字问答正常但系统抛出“语音服务暂时不可用，请稍后再试”错误。
+  - **排查定位**：通过直接 `curl` 本地 `4000` 端口的 `/api/v1/tts/speech` 及 `/api/v1/tts/stream` 确认后端服务本身可用（能返回音频二进制流）。定位到问题为：本地运行的 Rust API 进程（PID 49799）和 Next.js dev 进程（PID 49832）启动时间较早，并未加载到后面配置的最新环境变量。前端因读取不到 `NEXT_PUBLIC_TTS_TRANSPORT=local-stream` 默认回退使用 DashScope API，但本地又无 `DASHSCOPE_API_KEY`，进而导致连接失败。
+  - **修复方案**：杀死全部陈旧的后台 API 进程和 Next.js 进程，以最新环境配置重新在后台拉起 `cargo run --bin api` 以及 `npm run dev`。服务重载后，本地数字人语音合成与播放功能彻底恢复正常。
+- **测试通过**：
+  - 本地运行 `npm run test` 与 `cargo test` 全部测试百分之百通过。

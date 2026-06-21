@@ -26,6 +26,7 @@ export type ChatSessionCallbacks = {
   onStreamStart?: () => void | Promise<void>;
   onReplyResolved?: (reply: string) => void;
   streamMessage?: (input: ChatRequestInput, handlers: ChatStreamHandlers) => Promise<ChatResult>;
+  model?: string;
 };
 
 const STORAGE_KEY = "hnu.enrollment.chat.conversationId";
@@ -153,6 +154,7 @@ export function extractProfile(structuredResult: ChatStructuredResult | null): C
 }
 
 export function useChatSession(callbacks: ChatSessionCallbacks = {}) {
+  const { model } = callbacks;
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [streamStatus, setStreamStatus] = useState<ChatStreamStatus | "idle">("idle");
@@ -222,7 +224,8 @@ export function useChatSession(callbacks: ChatSessionCallbacks = {}) {
         const payload = {
           ...(conversationId ? { conversationId } : {}),
           ...(profile ? { profile } : {}),
-          message
+          message,
+          ...(model ? { model } : {})
         };
 
         await callbacks.onStreamStart?.();
@@ -281,7 +284,7 @@ export function useChatSession(callbacks: ChatSessionCallbacks = {}) {
         }
       }
     },
-    [callbacks, conversationId, structuredResult]
+    [callbacks, conversationId, structuredResult, model]
   );
 
   useEffect(() => {

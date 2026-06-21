@@ -28,6 +28,7 @@ export type ChatRequestInput = {
   conversationId?: string;
   message: string;
   profile?: ChatProfileInput;
+  model?: string;
 };
 
 export type ChatCitation = {
