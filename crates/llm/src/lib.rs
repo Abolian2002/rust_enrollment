@@ -88,9 +88,16 @@ struct ChatCompletionRequest<'a> {
     #[serde(rename = "max_tokens")]
     max_tokens: u32,
     #[serde(skip_serializing_if = "Option::is_none")]
-    enable_thinking: Option<bool>,
+    pub enable_thinking: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub chat_template_kwargs: Option<ChatTemplateKwargs>,
     #[serde(default)]
-    stream: bool,
+    pub stream: bool,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct ChatTemplateKwargs {
+    pub enable_thinking: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -220,22 +227,26 @@ impl LlmConcurrencyLimiter {
 impl LlmProvider for OpenAiCompatibleClient {
     async fn complete(&self, messages: &[LlmMessage]) -> Result<LlmResponse> {
         let _permit = self.acquire_llm_permit("complete").await?;
+        let enable_thinking = read_optional_bool(
+            std::env::var("OPENAI_COMPAT_ENABLE_THINKING")
+                .ok()
+                .as_deref(),
+            std::env::var("DASHSCOPE_ENABLE_THINKING").ok().as_deref(),
+        );
+        let chat_template_kwargs = enable_thinking.map(|val| ChatTemplateKwargs { enable_thinking: val });
+
         let url = format!("{}/chat/completions", self.base_url);
         let response = self
             .http
-            .post(url)
+            .post(&url)
             .bearer_auth(&self.api_key)
             .json(&ChatCompletionRequest {
                 model: &self.model,
                 messages,
                 temperature: 0.2,
                 max_tokens: 1600,
-                enable_thinking: read_optional_bool(
-                    std::env::var("OPENAI_COMPAT_ENABLE_THINKING")
-                        .ok()
-                        .as_deref(),
-                    std::env::var("DASHSCOPE_ENABLE_THINKING").ok().as_deref(),
-                ),
+                enable_thinking,
+                chat_template_kwargs,
                 stream: false,
             })
             .send()
@@ -263,21 +274,25 @@ impl LlmProvider for OpenAiCompatibleClient {
     async fn stream_complete(&self, messages: &[LlmMessage]) -> Result<LlmDeltaStream> {
         let permit = self.acquire_llm_permit("stream_complete").await?;
         let url = format!("{}/chat/completions", self.base_url);
+        let enable_thinking = read_optional_bool(
+            std::env::var("OPENAI_COMPAT_ENABLE_THINKING")
+                .ok()
+                .as_deref(),
+            std::env::var("DASHSCOPE_ENABLE_THINKING").ok().as_deref(),
+        );
+        let chat_template_kwargs = enable_thinking.map(|val| ChatTemplateKwargs { enable_thinking: val });
+
         let response = self
             .http
-            .post(url)
+            .post(&url)
             .bearer_auth(&self.api_key)
             .json(&ChatCompletionRequest {
                 model: &self.model,
                 messages,
                 temperature: 0.2,
                 max_tokens: 1600,
-                enable_thinking: read_optional_bool(
-                    std::env::var("OPENAI_COMPAT_ENABLE_THINKING")
-                        .ok()
-                        .as_deref(),
-                    std::env::var("DASHSCOPE_ENABLE_THINKING").ok().as_deref(),
-                ),
+                enable_thinking,
+                chat_template_kwargs,
                 stream: true,
             })
             .send()
