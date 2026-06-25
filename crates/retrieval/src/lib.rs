@@ -13,7 +13,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 
-const DEFAULT_FAQ_MIN_SIMILARITY: f64 = 0.66;
+const DEFAULT_FAQ_MIN_SIMILARITY: f64 = 0.55;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RetrievalIntent {
@@ -1897,7 +1897,7 @@ mod tests {
                 answer: "10231".to_owned(),
                 category: "志愿填报".to_owned(),
                 source_label: "FAQ".to_owned(),
-                similarity: Some(0.60),
+                similarity: Some(0.50),
             },
         ]);
 

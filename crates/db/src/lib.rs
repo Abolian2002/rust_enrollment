@@ -2401,19 +2401,25 @@ impl Database {
         let embedding_literal = pgvector_literal(embedding);
         let rows = sqlx::query(
             r#"
-            SELECT DISTINCT ON (fk.id)
-              fk.id,
-              fk.question,
-              fk.answer,
-              fk.category,
-              fk.source_label,
-              1 - (kc.embedding <=> $1::vector) as similarity
-            FROM knowledge_chunks kc
-            JOIN faq_knowledge fk ON fk.id = kc.faq_knowledge_id
-            WHERE kc.embedding IS NOT NULL
-              AND fk.status = 'PUBLISHED'
-              AND 1 - (kc.embedding <=> $1::vector) >= $2
-            ORDER BY fk.id, kc.embedding <=> $1::vector
+            WITH ranked_chunks AS (
+              SELECT
+                fk.id,
+                fk.question,
+                fk.answer,
+                fk.category,
+                fk.source_label,
+                1 - (kc.embedding <=> $1::vector) as similarity,
+                ROW_NUMBER() OVER (PARTITION BY fk.id ORDER BY kc.embedding <=> $1::vector) as rn
+              FROM knowledge_chunks kc
+              JOIN faq_knowledge fk ON fk.id = kc.faq_knowledge_id
+              WHERE kc.embedding IS NOT NULL
+                AND fk.status = 'PUBLISHED'
+                AND 1 - (kc.embedding <=> $1::vector) >= $2
+            )
+            SELECT id, question, answer, category, source_label, similarity
+            FROM ranked_chunks
+            WHERE rn = 1
+            ORDER BY similarity DESC
             LIMIT $3
             "#,
         )
